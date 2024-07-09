@@ -10,6 +10,8 @@ from FlatRatioEntity import Flat, Base
 from processing import csv_to_unixtime_df
 from repository import TaskRepository
 
+from sklearn.linear_model import LinearRegression
+
 engine = create_async_engine("sqlite+aiosqlite:///data.db")
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
@@ -51,6 +53,15 @@ def linregress(x, y):
     return k, stability
 
 
+def linregress_new(x, y):
+    x = np.array(x, dtype=np.float64)
+    y = np.array(y, dtype=np.float64)
+
+    model = LinearRegression()
+    model.fit(x, y)
+    return model.intercept_, all(mark > 0.0 for mark in x)
+
+
 async def dataAllocation():
     filename = "raai_school_2024.csv"  # Ensure the CSV file is in the correct format
     data = csv_to_unixtime_df(filename)
@@ -59,12 +70,12 @@ async def dataAllocation():
     flatItems = []
     for name, group in data.groupby(['flat_tkn']):
         key = name[0]
-        y = group['debt'].tolist()
-        x = np.linspace(1, len(y), len(y))
-        k, stability = linregress(x, y)
+        x = np.array(group['debt'].tolist()).reshape((-1, 1))
+        y = np.linspace(1, len(x), len(x))
+        k, stability = linregress_new(x, y)
 
         flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
-        print(f"Record #{key} {y=} {k=} {stability=}")
+        print(f"Record #{key} {x=} {k=} {stability=}")
 
     await TaskRepository.addFlats(flatItems)
 
