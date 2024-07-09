@@ -11,7 +11,7 @@ from FlatRatioEntity import Flat, Base
 from processing import csv_to_unixtime_df
 from repository import TaskRepository
 
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import SGDRegressor
 
 engine = create_async_engine("sqlite+aiosqlite:///data.db")
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -64,7 +64,7 @@ def linregress_new(x, y):
     if sum_abs_x != 0.0:
         correction = -sum(x) / sum_abs_x
 
-    model = BayesianRidge()
+    model = SGDRegressor()
     model.fit(x, y)
     return model.coef_ * correction, all(mark < 0.0 for mark in x)
 
