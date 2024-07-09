@@ -1,10 +1,13 @@
 import asyncio
+import time
+from functools import lru_cache, cache
 
 import numpy as np
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from FlatRatioEntity import Flat, Base
+from processing import csv_to_unixtime_df
 from repository import TaskRepository
 
 engine = create_async_engine("sqlite+aiosqlite:///data.db")
@@ -32,7 +35,7 @@ def linregress(x, y):
     stability = True
 
     for mark in x:
-        if (mark > 0.0):
+        if mark > 0.0:
             stability = False
             break
 
@@ -53,26 +56,49 @@ def linregress(x, y):
 
 
 async def dataAllocation():
-    flat_id = await  TaskRepository.getFlatIDsGrouped()
-
-    # print(np.linspace(1, len(x), len(x)))
-    # запрашиваю данные о кв и долгах
-    # беру данные долга запихиваю в x
-    # формирую y при помощи linspace
-    # получаю k
-    # добавляю ид кв + k в массив
-    # массив по окончанию выгружается в бд
-    # хайп
+    filename = "raai_school_2024.csv"  # Ensure the CSV file is in the correct format
+    data = csv_to_unixtime_df(filename)
+    data = data[['flat_tkn', 'debt']]
 
     flatItems = []
-
-    for id in flat_id:
-        x = await TaskRepository.getFlatDebtsById(id)
+    for name, group in data.groupby(['flat_tkn']):
+        key = name[0]
+        x = group['debt'].tolist()
         y = np.linspace(1, len(x), len(x))
         k, stability = linregress(x, y)
-        flatItems.append(Flat(flatId=id, ratio=k, stability=stability))
+
+        flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
+        print(f"Record #{key}")
 
     await TaskRepository.addFlats(flatItems)
+
+    # flats_id = await TaskRepository.getFlatIDsGrouped()
+    #
+    # # print(np.linspace(1, len(x), len(x)))
+    # # запрашиваю данные о кв и долгах
+    # # беру данные долга запихиваю в x
+    # # формирую y при помощи linspace
+    # # получаю k
+    # # добавляю ид кв + k в массив
+    # # массив по окончанию выгружается в бд
+    # # хайп
+    #
+    # flatItems = []
+    #
+    # count = 0
+    # for flat_id in flats_id:
+    #     start = time.time()
+    #     x = await TaskRepository.getFlatDebtsById(flat_id)
+    #     y = np.linspace(1, len(x), len(x))
+    #     k, stability = linregress(x, y)
+    #
+    #     end = time.time()
+    #     print(end - start)
+    #     flatItems.append(Flat(flatId=flat_id, ratio=k, stability=stability))
+    #     print(f"Record #{flat_id}")
+    #
+    #     if count % 1000 == 0 and count != 0:
+    #         await TaskRepository.addFlats(flatItems)
 
 
 # Принесли Чебурашка и Гена домой ящик пива.
