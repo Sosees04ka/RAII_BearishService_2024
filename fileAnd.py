@@ -3,6 +3,7 @@ import time
 from functools import lru_cache, cache
 
 import numpy as np
+from sklearn.linear_model import BayesianRidge
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -57,20 +58,19 @@ def linregress_new(x, y):
     x = np.array(x, dtype=np.float64)
     y = np.array(y, dtype=np.float64)
 
-    sum_x = sum(x)
     sum_abs_x = sum(abs(i) for i in x)
     correction = 1
 
     if sum_abs_x != 0.0:
-        correction = -sum(x) / sum(abs(i) for i in x)
+        correction = -sum(x) / sum_abs_x
 
-    model = LinearRegression()
+    model = BayesianRidge()
     model.fit(x, y)
-    return model.intercept_ * correction, all(mark > 0.0 for mark in x)
+    return model.coef_ * correction, all(mark < 0.0 for mark in x)
 
 
 async def dataAllocation():
-    filename = "raai_school_2024.csv"  # Ensure the CSV file is in the correct format
+    filename = "raai_school_2024.csv"
     data = csv_to_unixtime_df(filename)
     data = data[['flat_tkn', 'debt']]
 
