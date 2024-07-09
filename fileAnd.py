@@ -57,9 +57,16 @@ def linregress_new(x, y):
     x = np.array(x, dtype=np.float64)
     y = np.array(y, dtype=np.float64)
 
+    sum_x = sum(x)
+    sum_abs_x = sum(abs(i) for i in x)
+    correction = 1
+
+    if sum_abs_x != 0.0:
+        correction = -sum(x) / sum(abs(i) for i in x)
+
     model = LinearRegression()
     model.fit(x, y)
-    return model.intercept_, all(mark > 0.0 for mark in x)
+    return model.intercept_ * correction, all(mark > 0.0 for mark in x)
 
 
 async def dataAllocation():
@@ -75,7 +82,7 @@ async def dataAllocation():
         k, stability = linregress_new(x, y)
 
         flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
-        print(f"Record #{key} {x=} {k=} {stability=}")
+        print(f"Record #{key} {k=} {stability=}")
 
     await TaskRepository.addFlats(flatItems)
 
