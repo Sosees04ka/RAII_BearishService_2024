@@ -1,14 +1,15 @@
 import datetime
-from xmlrpc.client import DateTime
 from numpy import genfromtxt
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Float, Column, Integer, String
+from processing import csv_to_unixtime_df  # Assuming this function exists in processing module
 
-sqlite_database = "sqlite+aiosqlite:///tasks.db"
+# Use the regular SQLite driver instead of aiosqlite
+sqlite_database = "sqlite:///tasks.db"
 engine = create_engine(sqlite_database, echo=True)
-class Base(DeclarativeBase): pass
+
+Base = declarative_base()
 
 
 class House(Base):
@@ -16,47 +17,59 @@ class House(Base):
 
     house_tkn = Column(Integer, primary_key=True, index=True)
     flat_tkn = Column(Integer)
-    payment_period = Column(DateTime, default=datetime.datetime.utcnow)
-    income = Column(float)
-    debt = Column(float)
-    raised = Column(float)
-    volume_cold = Column(float)
-    volume_hot = Column(float)
-    volume_electr = Column(float)
+    unix_payment_period = Column(Integer)
+    income = Column(Float)
+    debt = Column(Float)
+    raised = Column(Float)
+    volume_cold = Column(Float)
+    volume_hot = Column(Float)
+    volume_electr = Column(Float)
 
 
 Base.metadata.create_all(bind=engine)
 
-session = sessionmaker()
-session.configure(bind=engine)
-s = session()
-def Load_Data(file_name):
-    data = genfromtxt(file_name, delimiter=';', skip_header=1, converters={0: lambda s: str(s)})
-    return data.tolist()
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+def load_data(filename):
+    return csv_to_unixtime_df(filename)
+
+
 if __name__ == "__main__":
     try:
-        file_name = "raai_school_2024.csv" #sample CSV file used:  http://www.google.com/finance/historical?q=NYSE%3AT&ei=W4ikVam8LYWjmAGjhoHACw&output=csv
-        data = Load_Data(file_name)
+        filename = "raai_school_2024.csv"  # Ensure the CSV file is in the correct format
+        data = load_data(filename)
 
-        for i in data:
-            record = House(**{
-                'house_tkn' : i[0],
-                'flat_tkn' : i[1],
-                'payment_period' : datetime.strptime(i[2], '%d-%b-%y').date(),
-                'income' : i[3],
-                'debt' : i[4],
-                'raised' : i[5],
-                'volume_cold': i[6],
-                'volume_hot': i[7],
-                'volume_electr': i[8],
-            })
-            s.add(record) #Add all the records
+        for index, row in data.iterrows():
+            record = House(
+                house_tkn=row["house_tkn"],
+                flat_tkn=row["flat_tkn"],
+                unix_payment_period=row["unix_payment_period"],
+                income=row["income"],
+                debt=row["debt"],
+                raised=row["raised"],
+                volume_cold=row["volume_cold"],
+                volume_hot=row["volume_hot"],
+                volume_electr=row["volume_electr"],
+            )
+            session.add(record)  # Add all the records
 
-        s.commit() #Attempt to commit all the records
-    except:
-        s.rollback() #Rollback the changes on error
+        session.commit()  # Attempt to commit all the records
+    except Exception as e:
+        session.rollback()  # Rollback the changes on error
+        print(f"Error occurred: {e}")
     finally:
-        s.close() #Close the connection
-
-#попытка номер 1 (csv добавил по приколу) проверить
-
+        records = session.query(House).all()
+        for row in records:
+            print("House Token:", row.house_tkn)
+            print("Flat Token:", row.flat_tkn)
+            print("Payment Period:", row.unix_payment_period)
+            print("Income:", row.income)
+            print("Debt:", row.debt)
+            print("Raised:", row.raised)
+            print("Volume Cold:", row.volume_cold)
+            print("Volume Hot:", row.volume_hot)
+            print("Volume Electr:", row.volume_electr)
+            print("\n")
+        session.close()  # Close the connection
