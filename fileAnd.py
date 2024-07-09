@@ -32,12 +32,8 @@ def linregress(x, y):
     x = np.array(x, dtype=np.float64)
     y = np.array(y, dtype=np.float64)
     w = np.ones(x.size, dtype=np.float64)
-    stability = True
 
-    for mark in x:
-        if mark > 0.0:
-            stability = False
-            break
+    stability = all(mark > 0.0 for mark in x)
 
     wxy = np.sum(w * y * x)
     wx = np.sum(w * x)
@@ -63,12 +59,12 @@ async def dataAllocation():
     flatItems = []
     for name, group in data.groupby(['flat_tkn']):
         key = name[0]
-        x = group['debt'].tolist()
-        y = np.linspace(1, len(x), len(x))
+        y = group['debt'].tolist()
+        x = np.linspace(1, len(y), len(y))
         k, stability = linregress(x, y)
 
         flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
-        print(f"Record #{key}")
+        print(f"Record #{key} {y=} {k=} {stability=}")
 
     await TaskRepository.addFlats(flatItems)
 
