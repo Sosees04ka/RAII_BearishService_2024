@@ -1,11 +1,8 @@
-import datetime
-from numpy import genfromtxt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import Float, Column, Integer, String
-from processing import csv_to_unixtime_df  # Assuming this function exists in processing module
+from sqlalchemy import Float, Column, Integer
+from processing import csv_to_unixtime_df
 
-# Use the regular SQLite driver instead of aiosqlite
 sqlite_database = "sqlite:///tasks.db"
 engine = create_engine(sqlite_database, echo=True)
 
@@ -13,7 +10,7 @@ Base = declarative_base()
 
 
 class House(Base):
-    __tablename__ = "people"
+    __tablename__ = "house"
 
     house_tkn = Column(Integer, primary_key=True, index=True)
     flat_tkn = Column(Integer)
@@ -53,11 +50,11 @@ if __name__ == "__main__":
                 volume_hot=row["volume_hot"],
                 volume_electr=row["volume_electr"],
             )
-            session.add(record)  # Add all the records
+            session.add(record)
 
-        session.commit()  # Attempt to commit all the records
+        session.commit()
     except Exception as e:
-        session.rollback()  # Rollback the changes on error
+        session.rollback()
         print(f"Error occurred: {e}")
     finally:
         records = session.query(House).all()
@@ -72,4 +69,4 @@ if __name__ == "__main__":
             print("Volume Hot:", row.volume_hot)
             print("Volume Electr:", row.volume_electr)
             print("\n")
-        session.close()  # Close the connection
+        session.close()
