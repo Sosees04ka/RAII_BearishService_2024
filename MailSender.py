@@ -6,7 +6,9 @@ import asyncio
 
 EMAIL = 'orderbuyerzxc@gmail.com'
 PWD = 'bhau wuvy rltg psgv'
-path_to_pdf=r'D:\Games\PyCharmRepos\RAII_BearishService_2024\report.pdf'
+path_to_pdf = r'D:\Games\PyCharmRepos\RAII_BearishService_2024\report.pdf'
+
+
 async def send_mail(subject, to, msg):
     message = MIMEMultipart()
     message["From"] = EMAIL
@@ -23,5 +25,6 @@ async def send_mail(subject, to, msg):
         await smtp_client.login(EMAIL, PWD)
         await smtp_client.send_message(message)
 
+
 if __name__ == '__main__':
-    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>',))
+    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>', ))

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from FlatRatioEntity import Flat, Base
 from processing import csv_to_unixtime_df
-from repository import TaskRepository
+from repository import HouseRepository
 
 from sklearn.linear_model import SGDRegressor
 
@@ -84,7 +84,7 @@ async def dataAllocation():
         flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
         print(f"Record #{key} {k=} {stability=}")
 
-    await TaskRepository.addFlats(flatItems)
+    await HouseRepository.add_flats(flatItems)
 
     # flats_id = await TaskRepository.getFlatIDsGrouped()
     #
@@ -121,9 +121,12 @@ async def dataAllocation():
 # "Вот и попили, блять, пивка!".
 
 async def main():
-    await delete_tables()
-    await create_tables()
-    await dataAllocation()
+    percent = await HouseRepository.get_dept_percent(4)
+    percent = await HouseRepository.get_energy_percent(88)
+    print(percent)
+    #await delete_tables()
+    #await create_tables()
+    #await dataAllocation()
 
 
 # Запуск асинхронной функции

@@ -1,9 +1,11 @@
-from sqlalchemy import create_engine, Float
+from sqlalchemy import Float
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Session
-from sqlalchemy import  Column, Integer, String
+from sqlalchemy import Column, Integer
+
 
 class Base(DeclarativeBase): pass
+
+
 class House(Base):
     __tablename__ = "House"
 
