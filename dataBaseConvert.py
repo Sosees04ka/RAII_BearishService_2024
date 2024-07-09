@@ -25,8 +25,8 @@ table_sql = """
 
 insert_sql = """
     INSERT INTO House 
-    (id, house_tkn, flat_tkn, unix_payment_period, income, debt, raised, volume_cold, volume_hot, volume_electr) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (id, house_tkn, flat_tkn, unix_payment_period, income, debt, raised, volume_cold, volume_hot, volume_electr, anomaly) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 select_sql = "SELECT * FROM House LIMIT 10;"
