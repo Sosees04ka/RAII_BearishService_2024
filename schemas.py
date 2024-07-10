@@ -26,6 +26,23 @@ class HouseResponse(BaseModel):
     debt_percent: Optional[float]
     water_percent: Optional[float]
     electrical_percent: Optional[float]
-    rate_cold_water: Optional[float]
-    rate_hot_water: Optional[float]
-    rate_electrical: Optional[float]
+
+
+class ValuePeriod(BaseModel):
+    value: int
+    period: str
+
+
+class Flat(BaseModel):
+    house_tkn: int
+    flat_tkn: int
+    flat_persons: list[ValuePeriod]
+    cold_water: list[ValuePeriod]
+    hot_water: list[ValuePeriod]
+    electrical: list[ValuePeriod]
+    current_debt: int
+    dynamic_index: int
+    stability: bool
+    water_percent: int
+    electrical_percent: int
+    debt_cluster: int
