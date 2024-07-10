@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends,HTTPException
-from typing import List
 
 from sqlalchemy import select, distinct
 
@@ -10,7 +9,6 @@ from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
 from schemas import STaskAdd, STask, STaskId, HouseResponse
-from pydantic import BaseModel
 router = APIRouter(
     prefix="/data",
     tags=["Таски"],
