@@ -1,9 +1,12 @@
+import math
+
 from sqlalchemy import select, func
+from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from HouseEntity import House
 from database import new_session, TaskOrm
-from schemas import STaskAdd, STask
+from schemas import STaskAdd, STask, HouseResponse
 
 
 class HouseRepository:
@@ -19,13 +22,20 @@ class HouseRepository:
             return task.id
 
     @classmethod
-    async def find_all(cls) -> list[STask]:
+    async def find_all(cls, q: str = None, offset: int = 0, limit: int = 10) -> list[House]:
         async with new_session() as session:
-            query = select(TaskOrm)
+            query = select(House).group_by(House.house_tkn)
+
+            # Применяем условный поиск, если задан параметр q
+            if q:
+                query = query.where(House.house_tkn.contains(q))
+
+            # Добавляем смещение и лимит
+            query = query.offset(offset).limit(limit)
+
             result = await session.execute(query)
-            task_models = result.scalars().all()
-            task_schemas = [STask.model_validate(task_model) for task_model in task_models]
-            return task_schemas
+            houses = result.scalars().all()
+            return houses
 
     @classmethod
     async def get_flat_ids_grouped(cls) -> list:
@@ -197,8 +207,13 @@ class HouseRepository:
             result_current_volume_water_cold = await session.execute(stmt_current_volume_water_cold)
             current_volume_water = result_current_volume_water_hot.scalar() + result_current_volume_water_cold.scalar()
 
-            if current_volume_water is None:
+            current_volume_water_hot = result_current_volume_water_hot.scalar_one()
+            current_volume_water_cold = result_current_volume_water_cold.scalar_one()
+
+            if current_volume_water_hot is None or current_volume_water_cold is None:
                 return None
+
+            current_volume_water = current_volume_water_hot + current_volume_water_cold
 
             stmt_previous_volume_water_hot = select(func.sum(House.volume_hot)).where(
                 House.house_tkn == house,
@@ -378,3 +393,30 @@ class HouseRepository:
 
             result = await session.execute(stmt)
             return result.fetchall()
+
+    @classmethod
+    async def find_by_tkn(cls, house_tkn: int):
+        async with new_session() as session:
+            stmt = select(House).where(House.house_tkn == house_tkn)
+            result = await session.execute(stmt)
+            house = result.scalar()
+        return house
+
+    @classmethod
+    async def count_people_in_house(cls,house_tkn: int):
+        async with new_session() as session:
+            # Вычисляем среднее количество пользователей в каждой квартире
+            stmt = (
+                select(House.flat_tkn, func.avg(House.count_people))
+                .where(House.house_tkn == house_tkn)
+                .group_by(House.flat_tkn)
+            )
+
+            avg_people_per_flat = await session.execute(stmt)
+
+            total_people = 0
+            for flat_tkn, avg_count in avg_people_per_flat:
+                rounded_avg_count = math.ceil(avg_count)  # Округляем до целого числа в большую сторону
+                total_people += rounded_avg_count
+
+            return total_people

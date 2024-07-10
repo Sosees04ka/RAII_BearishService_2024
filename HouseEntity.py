@@ -18,3 +18,4 @@ class House(Base):
     volume_cold = Column(Float)
     volume_hot = Column(Float)
     volume_electr = Column(Float)
+    count_people = Column(Integer)
