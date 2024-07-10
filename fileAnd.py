@@ -122,7 +122,7 @@ async def dataAllocation():
 
 async def main():
     percent = await HouseRepository.get_dept_percent(4)
-    percent = await HouseRepository.get_energy_percent(88)
+    percent = await HouseRepository.get_energy_percent(2)
     print(percent)
     #await delete_tables()
     #await create_tables()

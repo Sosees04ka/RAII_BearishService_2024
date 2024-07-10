@@ -159,6 +159,68 @@ class HouseRepository:
             if previous_volume_electr is None:
                 return None
 
-            percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * -100
+            percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * 100
+
+            return percent_change
+
+    @classmethod
+    async def get_water_percent(cls, house):
+        async with new_session() as session:
+            stmt_latest = select(House.unix_payment_period).where(
+                House.house_tkn == house
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_latest = await session.execute(stmt_latest)
+            latest_unix_time = result_latest.scalar()
+
+            if latest_unix_time is None:
+                return None
+
+            stmt_previous = select(House.unix_payment_period).where(
+                House.house_tkn == house,
+                House.unix_payment_period < latest_unix_time
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_previous = await session.execute(stmt_previous)
+            previous_unix_time = result_previous.scalar()
+
+            if previous_unix_time is None:
+                return None
+
+            stmt_current_volume_water_hot = select(func.sum(House.volume_hot)).where(
+                House.house_tkn == house,
+                House.unix_payment_period == latest_unix_time
+            )
+
+            stmt_current_volume_water_cold = select(func.sum(House.volume_cold)).where(
+                House.house_tkn == house,
+                House.unix_payment_period == latest_unix_time
+            )
+
+            result_current_volume_water_hot = await session.execute(stmt_current_volume_water_hot)
+            result_current_volume_water_cold = await session.execute(stmt_current_volume_water_cold)
+            current_volume_water = result_current_volume_water_hot.scalar()+result_current_volume_water_cold.scalar()
+
+            if current_volume_water is None:
+                return None
+
+            stmt_previous_volume_water_hot = select(func.sum(House.volume_hot)).where(
+                House.house_tkn == house,
+                House.unix_payment_period == previous_unix_time
+            )
+
+            stmt_previous_volume_water_cold = select(func.sum(House.volume_cold)).where(
+                House.house_tkn == house,
+                House.unix_payment_period == previous_unix_time
+            )
+
+            result_previous_volume_water_hot = await session.execute(stmt_previous_volume_water_hot)
+            result_previous_volume_water_cold = await session.execute(stmt_previous_volume_water_cold)
+            previous_volume_water = result_previous_volume_water_hot.scalar() + result_previous_volume_water_cold.scalar()
+
+            if previous_volume_water is None:
+                return None
+
+            percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
 
             return percent_change
