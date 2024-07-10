@@ -6,6 +6,7 @@ from typing import List
 from sqlalchemy import select, distinct
 
 from HouseEntity import House
+from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
 from schemas import STaskAdd, STask, STaskId, HouseResponse
@@ -70,6 +71,7 @@ async def get_houses(q: Optional[str] = None, page: int = 1, pageSize: int = 10)
     house_responses = []
     for house in houses:
         house_tkn = house.house_tkn
+        tariffs = await Matrix.get_tariffs(house_tkn)
         count_flat = await HouseRepository.get_count_flat(house_tkn)
         debt_percent = await HouseRepository.get_dept_percent(house_tkn)
         count_persons = await HouseRepository.count_people_in_house(house_tkn)
@@ -82,7 +84,10 @@ async def get_houses(q: Optional[str] = None, page: int = 1, pageSize: int = 10)
             count_persons=count_persons,
             debt_percent=debt_percent,
             water_percent=water_percent,
-            electrical_percent=electrical_percent
+            electrical_percent=electrical_percent,
+            rate_cold_water = tariffs.get('cold_water_tariff'),
+            rate_hot_water = tariffs.get('hot_water_tariff'),
+            rate_electrical = tariffs.get('electricity_tariff')
         )
         house_responses.append(house_response)
 
