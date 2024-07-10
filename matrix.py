@@ -4,7 +4,6 @@ from repository import HouseRepository
 class Matrix:
     @classmethod
     def solve_tariffs(cls, data, max_systems=5):
-        # Разделение данных по наличию объемов
         data_by_volume_count = {3: [], 2: [], 1: []}
 
         for row in data:
@@ -24,7 +23,6 @@ class Matrix:
             if len(volumes) > 0:
                 data_by_volume_count[len(volumes)].append((volumes, row.income, volume_labels))
 
-        # Выбор данных с максимальным количеством объемов
         for volume_count in range(3, 0, -1):
             if data_by_volume_count[volume_count]:
                 data_to_use = data_by_volume_count[volume_count]
@@ -39,13 +37,12 @@ class Matrix:
             tariffs, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
             return dict(zip(labels, tariffs))
 
-        # Решение системы уравнений для всех данных, ограничение на количество систем
         results = []
         count = 0
         for i in range(len(data_to_use)):
             for j in range(i + 1, len(data_to_use) + 1):
                 subset = data_to_use[i:j]
-                if len(subset) >= 2:  # Используем только подмножества размером не менее 2
+                if len(subset) >= 2:
                     results.append(solve_system(subset))
                     count += 1
                     if count >= max_systems:
@@ -53,7 +50,6 @@ class Matrix:
             if count >= max_systems:
                 break
 
-        # Вычисление средних значений тарифов
         avg_tariffs = {}
         count_tariffs = {}
 
@@ -66,6 +62,12 @@ class Matrix:
                 count_tariffs[key] += 1
 
         avg_tariffs = {key: avg_tariffs[key] / count_tariffs[key] for key in avg_tariffs}
+
+        # Ensure all three tariffs are in the result, set to None if missing
+        all_tariffs = ['cold_water_tariff', 'hot_water_tariff', 'electricity_tariff']
+        for tariff in all_tariffs:
+            if tariff not in avg_tariffs:
+                avg_tariffs[tariff] = None
 
         return avg_tariffs
 
