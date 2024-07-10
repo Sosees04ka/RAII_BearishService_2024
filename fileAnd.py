@@ -119,8 +119,6 @@ async def dataAllocation():
 # "Вот и попили, блять, пивка!".
 
 async def main():
-    data = await Matrix.get_tariffs(5)
-    print(data)
     await delete_tables()
     await create_tables()
     await dataAllocation()
