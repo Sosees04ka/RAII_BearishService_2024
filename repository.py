@@ -205,10 +205,9 @@ class HouseRepository:
 
             result_current_volume_water_hot = await session.execute(stmt_current_volume_water_hot)
             result_current_volume_water_cold = await session.execute(stmt_current_volume_water_cold)
-            current_volume_water = result_current_volume_water_hot.scalar() + result_current_volume_water_cold.scalar()
 
-            current_volume_water_hot = result_current_volume_water_hot.scalar_one()
-            current_volume_water_cold = result_current_volume_water_cold.scalar_one()
+            current_volume_water_hot = result_current_volume_water_hot.scalar()
+            current_volume_water_cold = result_current_volume_water_cold.scalar()
 
             if current_volume_water_hot is None or current_volume_water_cold is None:
                 return None
@@ -227,9 +226,16 @@ class HouseRepository:
 
             result_previous_volume_water_hot = await session.execute(stmt_previous_volume_water_hot)
             result_previous_volume_water_cold = await session.execute(stmt_previous_volume_water_cold)
-            previous_volume_water = result_previous_volume_water_hot.scalar() + result_previous_volume_water_cold.scalar()
 
-            if previous_volume_water is None:
+            previous_volume_water_hot = result_previous_volume_water_hot.scalar()
+            previous_volume_water_cold = result_previous_volume_water_cold.scalar()
+
+            if previous_volume_water_hot is None or previous_volume_water_cold is None:
+                return None
+
+            previous_volume_water = previous_volume_water_hot + previous_volume_water_cold
+
+            if previous_volume_water == 0:
                 return None
 
             percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
