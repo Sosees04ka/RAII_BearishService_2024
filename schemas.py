@@ -26,3 +26,6 @@ class HouseResponse(BaseModel):
     debt_percent: Optional[float]
     water_percent: Optional[float]
     electrical_percent: Optional[float]
+    rate_cold_water: Optional[float]
+    rate_hot_water: Optional[float]
+    rate_electrical: Optional[float]

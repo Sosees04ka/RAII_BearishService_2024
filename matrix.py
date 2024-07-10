@@ -63,7 +63,6 @@ class Matrix:
 
         avg_tariffs = {key: avg_tariffs[key] / count_tariffs[key] for key in avg_tariffs}
 
-        # Ensure all three tariffs are in the result, set to None if missing
         all_tariffs = ['cold_water_tariff', 'hot_water_tariff', 'electricity_tariff']
         for tariff in all_tariffs:
             if tariff not in avg_tariffs:
