@@ -1,8 +1,3 @@
-from calendar import calendar
-from datetime import datetime, timedelta
-
-import numpy
-import sqlalchemy
 from sqlalchemy import select, func
 
 from HouseEntity import House
