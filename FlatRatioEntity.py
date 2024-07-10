@@ -9,4 +9,5 @@ class Flat(Base):
     __tablename__ = "Flat"
     flatId = Column(Integer, primary_key=True, index=True)
     ratio = Column(Float, nullable=False)
+    debtAverage = Column(Float, nullable=False)
     stability = Column(BOOLEAN)

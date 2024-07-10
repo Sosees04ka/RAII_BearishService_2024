@@ -1,6 +1,7 @@
 import asyncio
 
 import numpy as np
+from sklearn.linear_model import Ridge
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -61,10 +62,9 @@ def linregress_new(x, y):
     if sum_abs_x != 0.0:
         correction = -sum(x) / sum_abs_x
 
-    model = SGDRegressor()
+    model = Ridge()
     model.fit(x, y)
-    return model.coef_ * correction, all(mark < 0.0 for mark in x)
-
+    return np.median(x),model.coef_, all(mark <= 0.0 for mark in x)
 
 async def dataAllocation():
     filename = "raai_school_2024.csv"
@@ -76,9 +76,9 @@ async def dataAllocation():
         key = name[0]
         x = np.array(group['debt'].tolist()).reshape((-1, 1))
         y = np.linspace(1, len(x), len(x))
-        k, stability = linregress_new(x, y)
+        d, k, stability = linregress_new(x, y)
 
-        flatItems.append(Flat(flatId=key, ratio=k, stability=stability))
+        flatItems.append(Flat(flatId=key, ratio=k, stability=stability,debtAverage = d))
         print(f"Record #{key} {k=} {stability=}")
 
     await HouseRepository.add_flats(flatItems)
@@ -121,9 +121,9 @@ async def main():
     percent = await HouseRepository.get_dept_percent(4)
     percent = await HouseRepository.get_energy_percent(2)
     print(percent)
-    #await delete_tables()
-    #await create_tables()
-    #await dataAllocation()
+    await delete_tables()
+    await create_tables()
+    await dataAllocation()
 
 
 # Запуск асинхронной функции
