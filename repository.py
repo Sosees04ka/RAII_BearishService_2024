@@ -1,4 +1,5 @@
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from HouseEntity import House
 from database import new_session, TaskOrm
@@ -194,7 +195,7 @@ class HouseRepository:
 
             result_current_volume_water_hot = await session.execute(stmt_current_volume_water_hot)
             result_current_volume_water_cold = await session.execute(stmt_current_volume_water_cold)
-            current_volume_water = result_current_volume_water_hot.scalar()+result_current_volume_water_cold.scalar()
+            current_volume_water = result_current_volume_water_hot.scalar() + result_current_volume_water_cold.scalar()
 
             if current_volume_water is None:
                 return None
@@ -219,3 +220,161 @@ class HouseRepository:
             percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
 
             return percent_change
+
+    @classmethod
+    async def get_water_percent_flat(cls, flat):
+        async with new_session() as session:
+            stmt_payment_periods = (
+                select(House.unix_payment_period)
+                    .where(House.flat_tkn == flat)
+                    .order_by(House.unix_payment_period.desc())
+                    .limit(2)
+            )
+
+            result_payment_periods = await session.execute(stmt_payment_periods)
+            payment_periods = result_payment_periods.scalars().all()
+
+            if len(payment_periods) < 2:
+                return None
+
+            latest_unix_time, previous_unix_time = payment_periods
+
+            stmt_volumes = (
+                select(
+                    House.unix_payment_period,
+                    func.sum(House.volume_hot).label('sum_hot'),
+                    func.sum(House.volume_cold).label('sum_cold')
+                )
+                    .where(
+                    House.flat_tkn == flat,
+                    House.unix_payment_period.in_([latest_unix_time, previous_unix_time])
+                )
+                    .group_by(House.unix_payment_period)
+            )
+
+            result_volumes = await session.execute(stmt_volumes)
+            volumes = {row.unix_payment_period: (row.sum_hot, row.sum_cold) for row in result_volumes}
+
+            if latest_unix_time not in volumes or previous_unix_time not in volumes:
+                return None
+
+            current_volume_water = sum(volumes[latest_unix_time])
+            previous_volume_water = sum(volumes[previous_unix_time])
+
+            if current_volume_water is None or previous_volume_water is None:
+                return None
+
+            percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
+
+            return percent_change
+
+    @classmethod
+    async def get_energy_percent_flat(cls, flat):
+        async with new_session() as session:
+            stmt_latest = select(House.unix_payment_period).where(
+                House.flat_tkn == flat
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_latest = await session.execute(stmt_latest)
+            latest_unix_time = result_latest.scalar()
+
+            if latest_unix_time is None:
+                return None
+
+            stmt_previous = select(House.unix_payment_period).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period < latest_unix_time
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_previous = await session.execute(stmt_previous)
+            previous_unix_time = result_previous.scalar()
+
+            if previous_unix_time is None:
+                return None
+
+            stmt_current_volume_electr = select(func.sum(House.volume_electr)).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period == latest_unix_time
+            )
+
+            result_current_volume_electr = await session.execute(stmt_current_volume_electr)
+            current_volume_electr = result_current_volume_electr.scalar()
+
+            if current_volume_electr is None:
+                return None
+
+            stmt_previous_volume_electr = select(func.sum(House.volume_electr)).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period == previous_unix_time
+            )
+
+            result_previous_volume_electr = await session.execute(stmt_previous_volume_electr)
+            previous_volume_electr = result_previous_volume_electr.scalar()
+
+            if previous_volume_electr is None:
+                return None
+
+            percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * 100
+
+            return percent_change
+
+    @classmethod
+    async def get_dept_percent_flat(cls, flat):
+        async with new_session() as session:
+            stmt_latest = select(House.unix_payment_period).where(
+                House.flat_tkn == flat
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_latest = await session.execute(stmt_latest)
+            latest_unix_time = result_latest.scalar()
+
+            if latest_unix_time is None:
+                return None
+
+            stmt_previous = select(House.unix_payment_period).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period < latest_unix_time
+            ).order_by(House.unix_payment_period.desc()).limit(1)
+
+            result_previous = await session.execute(stmt_previous)
+            previous_unix_time = result_previous.scalar()
+
+            if previous_unix_time is None:
+                return None
+
+            stmt_current_debt = select(func.sum(House.debt)).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period == latest_unix_time
+            )
+
+            result_current_debt = await session.execute(stmt_current_debt)
+            current_debt = result_current_debt.scalar() or 0
+
+            stmt_previous_debt = select(func.sum(House.debt)).where(
+                House.flat_tkn == flat,
+                House.unix_payment_period == previous_unix_time
+            )
+
+            result_previous_debt = await session.execute(stmt_previous_debt)
+            previous_debt = result_previous_debt.scalar() or 0
+
+            if previous_debt == current_debt:
+                return 0
+
+            percent_change = ((current_debt - previous_debt) / abs(previous_debt)) * -100
+
+            return percent_change
+
+    @classmethod
+    async def get_house_data(cls, house: int):
+        async with new_session() as session:
+            stmt = select(
+                House.unix_payment_period,
+                House.income,
+                House.volume_cold,
+                House.volume_hot,
+                House.volume_electr
+            ).where(House.house_tkn == house)
+
+            result = await session.execute(stmt)
+            return result.fetchall()

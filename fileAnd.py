@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from FlatRatioEntity import Flat, Base
 from processing import csv_to_unixtime_df
 from repository import HouseRepository
+from matrix import Matrix
 
 from sklearn.linear_model import SGDRegressor
 
@@ -118,9 +119,8 @@ async def dataAllocation():
 # "Вот и попили, блять, пивка!".
 
 async def main():
-    percent = await HouseRepository.get_dept_percent(4)
-    percent = await HouseRepository.get_energy_percent(2)
-    print(percent)
+    data = await Matrix.get_tariffs(5)
+    print(data)
     await delete_tables()
     await create_tables()
     await dataAllocation()
