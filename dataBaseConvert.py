@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from processing import csv_to_unix_time_df
 import sqlite3
 
+treshold = .65
+
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
 
@@ -37,6 +39,16 @@ select_sql = "SELECT * FROM House LIMIT 10;"
 
 get_count_sql = "SELECT COUNT(*) FROM House;"
 
+
+def rel_std(x: np.float64, y: np.float64) -> np.float64:
+    """
+    Относительное отклонение
+    """
+    if y != 0:
+        return (x - y) / y
+    return np.float64(.0)
+
+
 if __name__ == "__main__":
     try:
         cursor.execute(drop_sql)
@@ -47,65 +59,44 @@ if __name__ == "__main__":
         filename = "raai_school_2024.csv"
         data = csv_to_unix_time_df(filename)
 
-        statistics_by_house: pd.DataFrame = data.fillna(0.0)
+        statistics_by_house: pd.DataFrame = data.fillna(.0)
         statistics_by_house = statistics_by_house.drop(['payment_period'], axis=1)
         statistics_by_house = statistics_by_house[['volume_cold', 'volume_hot', 'volume_electr', 'house_tkn']]
 
         statistics_by_house_grouped = statistics_by_house.groupby(['house_tkn'], as_index=False)
-
-        statistics_by_house = statistics_by_house_grouped.agg(['min', 'max', 'mean'])
-
+        statistics_by_house = statistics_by_house_grouped.agg(['min', 'max', 'mean', 'std'])
         statistics_by_house.columns = ["_".join(head) for head in statistics_by_house.columns]
 
-        house = statistics_by_house.iloc[0]
+        for index, row in data.iterrows():
+            house = statistics_by_house[statistics_by_house['house_tkn_'] == row['house_tkn']].iloc[0]
 
-        cold_water_min = house['volume_cold_min']
-        cold_water_max = house['volume_cold_max']
-        cold_water_mean = house['volume_cold_mean']
+            record = (
+                index,
+                row['house_tkn'],
+                row['flat_tkn'],
+                row['unix_payment_period'],
+                row['income'],
+                row['debt'],
+                row['raised'],
+                row['volume_cold'],
+                row['volume_hot'],
+                row['volume_electr'],
+                (rel_std(row['volume_cold'], house['volume_cold_std']) > treshold
+                 or rel_std(row['volume_hot'], house['volume_hot_std']) > treshold
+                 or rel_std(row['volume_electr'], house['volume_electr_std']) > treshold)
+            )
 
-        print(cold_water_min, cold_water_max, cold_water_mean)
-
-        data_for_plot = data[data['house_tkn'] == 2]
-        data_for_plot = data_for_plot[['volume_cold']]
-        print(data_for_plot)
-
-        data_for_plot.plot.line(figsize=(20, 6))
-        plt.axhline(cold_water_min, color='c')
-        plt.axhline(cold_water_mean, color='r')
-        plt.axhline(cold_water_max, color='m')
-        plt.show()
-
-        # print(statistics_by_house)
-        # statistics_by_house.to_csv('test.csv')
-
-        # for index, row in data.iterrows():
-        #     print(row)
-        # record = (
-        #     index,
-        #     row['house_tkn'],
-        #     row['flat_tkn'],
-        #     row['unix_payment_period'],
-        #     row['income'],
-        #     row['debt'],
-        #     row['raised'],
-        #     row['volume_cold'],
-        #     row['volume_hot'],
-        #     row['volume_electr'],
-        #     False
-        # )
-        #
-        # cursor.execute(insert_sql, record)
-        # if index % 10_000 == 0:
-        #     print(f"Commited {index}!")
-        #     connection.commit()
+            cursor.execute(insert_sql, record)
+            if index % 10_000 == 0:
+                print(f"Commited {index}!")
+                connection.commit()
 
     except Exception as e:
         connection.rollback()
         print(f"Error occurred: {e}")
     finally:
         cursor.execute(get_count_sql)
-        records = cursor.fetchall()
+        records = cursor.fetchall()[0]
 
         print(records)
-
         connection.close()
