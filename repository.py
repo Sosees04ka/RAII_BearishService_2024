@@ -25,21 +25,25 @@ class HouseRepository:
     async def find_all(cls, q: str = None, offset: int = 0, limit: int = 10) -> [list[House], int]:
         async with new_session() as session:
             query = select(House).group_by(House.house_tkn)
-            sub_query = select(House.house_tkn).group_by(House.house_tkn)
+            count = 0
 
             # Применяем условный поиск, если задан параметр q
             if q:
                 query = query.where(House.house_tkn.contains(q))
-                sub_query = sub_query.where(House.house_tkn.contains(q))
 
             # Добавляем смещение и лимит
             query = query.offset(offset).limit(limit)
-            # query_count = select(sub_query, func.count())
+            if offset == 0:
+                sub_query = select(House.house_tkn).group_by(House.house_tkn)
+                if q:
+                    sub_query = sub_query.where(House.house_tkn.contains(q))
+
+                query_result = await session.execute(sub_query)
+                count = len(query_result.scalars().all())
 
             result = await session.execute(query)
-            count = await session.execute(sub_query)
             houses = result.scalars().all()
-            return houses, len(count.scalars().all())
+            return houses, count
 
     @classmethod
     async def get_flat_ids_grouped(cls) -> list:
@@ -251,9 +255,9 @@ class HouseRepository:
         async with new_session() as session:
             stmt_payment_periods = (
                 select(House.unix_payment_period)
-                    .where(House.flat_tkn == flat)
-                    .order_by(House.unix_payment_period.desc())
-                    .limit(2)
+                .where(House.flat_tkn == flat)
+                .order_by(House.unix_payment_period.desc())
+                .limit(2)
             )
 
             result_payment_periods = await session.execute(stmt_payment_periods)
@@ -270,11 +274,11 @@ class HouseRepository:
                     func.sum(House.volume_hot).label('sum_hot'),
                     func.sum(House.volume_cold).label('sum_cold')
                 )
-                    .where(
+                .where(
                     House.flat_tkn == flat,
                     House.unix_payment_period.in_([latest_unix_time, previous_unix_time])
                 )
-                    .group_by(House.unix_payment_period)
+                .group_by(House.unix_payment_period)
             )
 
             result_volumes = await session.execute(stmt_volumes)
@@ -413,7 +417,7 @@ class HouseRepository:
         return house
 
     @classmethod
-    async def count_people_in_house(cls,house_tkn: int):
+    async def count_people_in_house(cls, house_tkn: int):
         async with new_session() as session:
             # Вычисляем среднее количество пользователей в каждой квартире
             stmt = (
