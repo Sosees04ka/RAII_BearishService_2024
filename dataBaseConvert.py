@@ -1,7 +1,6 @@
 from processing import csv_to_unixtime_df
 import sqlite3
 
-
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
 
@@ -44,7 +43,19 @@ if __name__ == "__main__":
         data = csv_to_unixtime_df(filename)
 
         for index, row in data.iterrows():
-            record = (index, *row)
+            record = (
+                index,
+                row['house_tkn'],
+                row['flat_tkn'],
+                row['unix_payment_period'],
+                row['income'],
+                row['debt'],
+                row['raised'],
+                row['volume_cold'],
+                row['volume_hot'],
+                row['volume_electr'],
+                False
+            )
 
             cursor.execute(insert_sql, record)
             if index % 10_000 == 0:
