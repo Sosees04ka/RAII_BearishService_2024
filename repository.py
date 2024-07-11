@@ -81,7 +81,6 @@ class HouseRepository:
             # Применяем условный поиск, если задан параметр q
             if q:
                 query = query.where(House.house_tkn.contains(q))
-                sub_query = sub_query.where(House.house_tkn.contains(q))
 
             # Добавляем смещение и лимит
             query = query.offset(offset).limit(limit)
@@ -319,9 +318,9 @@ class HouseRepository:
         async with new_session() as session:
             stmt_payment_periods = (
                 select(House.unix_payment_period)
-                    .where(House.flat_tkn == flat)
-                    .order_by(House.unix_payment_period.desc())
-                    .limit(2)
+                .where(House.flat_tkn == flat)
+                .order_by(House.unix_payment_period.desc())
+                .limit(2)
             )
 
             result_payment_periods = await session.execute(stmt_payment_periods)
@@ -338,11 +337,11 @@ class HouseRepository:
                     func.sum(House.volume_hot).label('sum_hot'),
                     func.sum(House.volume_cold).label('sum_cold')
                 )
-                    .where(
+                .where(
                     House.flat_tkn == flat,
                     House.unix_payment_period.in_([latest_unix_time, previous_unix_time])
                 )
-                    .group_by(House.unix_payment_period)
+                .group_by(House.unix_payment_period)
             )
 
             result_volumes = await session.execute(stmt_volumes)
@@ -423,7 +422,7 @@ class HouseRepository:
             if current_volume_electr == previous_volume_electr:
                 return 0
 
-            if previous_volume_electr==0:
+            if previous_volume_electr == 0:
                 return None
 
             percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * 100
@@ -481,7 +480,7 @@ class HouseRepository:
             return percent_change
 
     @classmethod
-    async def get_house_data(cls, house: int):
+    async def get_house_data(cls, house_tkn: int):
         async with new_session() as session:
             stmt = select(
                 House.unix_payment_period,
@@ -489,7 +488,7 @@ class HouseRepository:
                 House.volume_cold,
                 House.volume_hot,
                 House.volume_electr
-            ).where(House.house_tkn == house)
+            ).where(House.house_tkn.is_(house_tkn))
 
             result = await session.execute(stmt)
             return result.fetchall()
@@ -508,8 +507,8 @@ class HouseRepository:
             # Вычисляем среднее количество пользователей в каждой квартире
             stmt = (
                 select(House.flat_tkn, func.avg(House.count_people))
-                    .where(House.house_tkn == house_tkn)
-                    .group_by(House.flat_tkn)
+                .where(House.house_tkn == house_tkn)
+                .group_by(House.flat_tkn)
             )
 
             avg_people_per_flat = await session.execute(stmt)
