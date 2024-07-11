@@ -8,7 +8,7 @@ from HouseEntity import House
 from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
-from schemas import STaskAdd, STask, STaskId, HouseResponse
+from schemas import STaskAdd, STask, STaskId, HouseResponse, SearchResponse
 
 from typing import Optional
 
@@ -41,10 +41,10 @@ async def get_house(house_tkn: int) -> HouseResponse:
     return house_response
 
 
-@router.get("/houses", response_model=dict)
+@router.get("/houses", response_model=SearchResponse)
 async def get_houses(q: Optional[str] = None,
                      page: int = 1,
-                     page_size: int = 10) -> dict:
+                     page_size: int = 10) -> SearchResponse:
     # Рассчитываем смещение для пагинации
     offset = (page - 1) * page_size
 
@@ -74,10 +74,7 @@ async def get_houses(q: Optional[str] = None,
         )
         house_responses.append(house_response)
 
-    return {
-        'houses': house_responses,
-        'count': count
-    }
+    return SearchResponse(houses=house_responses, count=count)
 
 
 @router.get("/housesIds", response_model=list[int])
