@@ -59,7 +59,6 @@ if __name__ == "__main__":
         data = csv_to_unixtime_df(filename)
 
         statistics_by_house: pd.DataFrame = data.fillna(.0)
-        statistics_by_house = statistics_by_house.drop(['payment_period'], axis=1)
         statistics_by_house = statistics_by_house[['volume_cold', 'volume_hot', 'volume_electr', 'house_tkn']]
 
         statistics_by_house_grouped = statistics_by_house.groupby(['house_tkn'], as_index=False)
