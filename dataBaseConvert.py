@@ -1,10 +1,9 @@
+import sqlite3
+
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
-
 from processing import csv_to_unixtime_df
-import sqlite3
 
 treshold = .65
 
