@@ -4,8 +4,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sqlalchemy import select, func
 
-from sqlalchemy.orm import aliased
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from HouseEntity import House
 from FlatRatioEntity import Flat as FlatEntity
