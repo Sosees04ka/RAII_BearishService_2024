@@ -1,14 +1,12 @@
 import math
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import aliased
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from HouseEntity import House
 from FlatRatioEntity import Flat as FlatEntity
 from database import new_session, TaskOrm
 from schemas import Flat, ValuePeriod
-from schemas import STaskAdd, STask, HouseResponse
+from schemas import STaskAdd
 
 
 class HouseRepository:
@@ -77,14 +75,11 @@ class HouseRepository:
             query = select(House).group_by(House.house_tkn)
             sub_query = select(House.house_tkn).group_by(House.house_tkn)
 
-            # Применяем условный поиск, если задан параметр q
             if q:
                 query = query.where(House.house_tkn.contains(q))
                 sub_query = sub_query.where(House.house_tkn.contains(q))
 
-            # Добавляем смещение и лимит
             query = query.offset(offset).limit(limit)
-            # query_count = select(sub_query, func.count())
 
             result = await session.execute(query)
             count = await session.execute(sub_query)
@@ -311,7 +306,6 @@ class HouseRepository:
     @classmethod
     async def get_water_percent_flat(cls, flat):
         async with new_session() as session:
-            # Получаем последние два периода оплаты
             stmt_payment_periods = (
                 select(House.unix_payment_period)
                     .where(House.flat_tkn == flat)
@@ -327,7 +321,6 @@ class HouseRepository:
 
             latest_unix_time, previous_unix_time = payment_periods
 
-            # Получаем объемы холодной и горячей воды за последние два периода оплаты
             stmt_volumes = (
                 select(
                     House.unix_payment_period,
@@ -344,34 +337,28 @@ class HouseRepository:
             result_volumes = await session.execute(stmt_volumes)
             volumes = {row.unix_payment_period: (row.sum_hot, row.sum_cold) for row in result_volumes}
 
-            # Проверяем наличие данных за оба периода
             if latest_unix_time not in volumes or previous_unix_time not in volumes:
                 return None
 
-            # Получаем текущие и предыдущие объемы воды
             latest_sum_hot, latest_sum_cold = volumes[latest_unix_time]
             previous_sum_hot, previous_sum_cold = volumes[previous_unix_time]
 
-            # Если оба значения (горячая и холодная вода) для любого из периодов отсутствуют, возвращаем None
             if (latest_sum_hot is None and latest_sum_cold is None) or (
                     previous_sum_hot is None and previous_sum_cold is None):
                 return None
 
-            # Заменяем None на 0 и суммируем
             current_volume_water = (latest_sum_hot or 0) + (latest_sum_cold or 0)
             previous_volume_water = (previous_sum_hot or 0) + (previous_sum_cold or 0)
 
-            # Если после всех проверок один из объемов равен нулю, возвращаем None
             if current_volume_water is None or previous_volume_water is None:
                 return None
 
             if current_volume_water == previous_volume_water:
                 return 0
 
-            if previous_volume_water==0:
+            if previous_volume_water == 0:
                 return None
 
-            # Вычисляем процентное изменение
             percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
 
             return percent_change
@@ -507,7 +494,6 @@ class HouseRepository:
     @classmethod
     async def count_people_in_house(cls, house_tkn: int):
         async with new_session() as session:
-            # Вычисляем среднее количество пользователей в каждой квартире
             stmt = (
                 select(House.flat_tkn, func.avg(House.count_people))
                     .where(House.house_tkn == house_tkn)
@@ -518,7 +504,7 @@ class HouseRepository:
 
             total_people = 0
             for flat_tkn, avg_count in avg_people_per_flat:
-                rounded_avg_count = math.ceil(avg_count)  # Округляем до целого числа в большую сторону
+                rounded_avg_count = math.ceil(avg_count)
                 total_people += rounded_avg_count
 
             return total_people

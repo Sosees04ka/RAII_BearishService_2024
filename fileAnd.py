@@ -8,9 +8,6 @@ from sqlalchemy.orm import sessionmaker
 from FlatRatioEntity import Flat, Base
 from processing import csv_to_unixtime_df
 from repository import HouseRepository
-from matrix import Matrix
-
-from sklearn.linear_model import SGDRegressor
 
 engine = create_async_engine("sqlite+aiosqlite:///data.db")
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

@@ -1,7 +1,4 @@
-from typing import Annotated
-from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from sqlalchemy import select, distinct
 
@@ -10,11 +7,11 @@ from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
-from schemas import STaskAdd, STask, STaskId, HouseResponse, SearchResponse
+from schemas import SearchResponse
 
 from typing import Optional
 
-from schemas import STaskAdd, STask, STaskId, HouseResponse, Flat
+from schemas import HouseResponse, Flat
 
 router = APIRouter(
     prefix="/data",
