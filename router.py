@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from sqlalchemy import select, distinct
 
@@ -9,9 +7,11 @@ from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
-from schemas import STaskAdd, STask, STaskId, HouseResponse, SearchResponse
+from schemas import SearchResponse
 
 from typing import Optional
+
+from schemas import HouseResponse, Flat
 
 router = APIRouter(
     prefix="/data",
@@ -87,6 +87,22 @@ async def get_housesIds() -> list[int]:
         house_ids = [row[0] for row in result]
 
     return house_ids
+
+
+@router.get("/getFlat/{flat_id}", response_model=Flat)
+async def get_flat_info(flat_id: int) -> Flat:
+    return await HouseRepository.get_info_flat(flat_id)
+
+
+@router.get("/getFlats/{house_id}", response_model=list[int])
+async def get_flat_ids(house_id: int) -> list[int]:
+    async with new_session() as session:
+        query = select(distinct(House.flat_tkn)).where(House.house_tkn == house_id)
+        result = await session.execute(query)
+        flat_ids = [row[0] for row in result]
+
+    return flat_ids
+
 
 @router.get("/chat")
 async def add_question(question: str):

@@ -34,8 +34,8 @@ class SearchResponse(BaseModel):
 
 
 class ValuePeriod(BaseModel):
-    value: int
-    period: str
+    value: Optional[float]
+    period: int
 
 
 class Flat(BaseModel):
@@ -45,9 +45,9 @@ class Flat(BaseModel):
     cold_water: list[ValuePeriod]
     hot_water: list[ValuePeriod]
     electrical: list[ValuePeriod]
-    current_debt: int
-    dynamic_index: int
+    current_debt: float
+    dynamic_index: float
     stability: bool
-    water_percent: int
-    electrical_percent: int
+    water_percent: Optional[float]
+    electrical_percent: Optional[float]
     debt_cluster: int
