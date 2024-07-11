@@ -105,8 +105,35 @@ async def get_flat_ids(house_id: int) -> list[int]:
 
 
 @router.get("/chat")
-async def add_question(question: str):
-    # Получение ответа от нейронной сети
+async def add_question(flat_id: int):
+    flat_info = await HouseRepository.get_info_flat(flat_id)
+
+    if flat_info.cold_water[0].value is None:
+        cold_water_value = "данные не указаны"
+    else:
+        cold_water_value = flat_info.cold_water[0].value
+
+    if flat_info.hot_water[0].value is None:
+        hot_water_value = "данные не указаны"
+    else:
+        hot_water_value = flat_info.hot_water[0].value
+
+
+    if flat_info.electrical[0].value is None:
+        electrical_value = "данные не указаны"
+    else:
+        electrical_value = flat_info.electrical[0].value
+
+    if flat_info.flat_persons[0].value == 0:
+        flat_persons_value = "данные не указаны"
+    else:
+        flat_persons_value = flat_info.flat_persons
+
+
+    question = f"Затраты ХВС - {cold_water_value}, Затраты ГВС - {hot_water_value}, Затраты Электричества - {electrical_value}, Количество людей - {flat_persons_value}"
+
+    print(question)
+    # Затраты ХВС - 24, 30, Затраты ГВС - 3, Затраты Электричества - 5, Количество людей - 10
     neural_response = get_chat_completion(giga_token, question)
 
     return {"answer": neural_response}

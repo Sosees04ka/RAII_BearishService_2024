@@ -39,7 +39,15 @@ def get_chat_completion(auth_token, user_message):
     payload = json.dumps({
         "model": "GigaChat",
         "messages": [
-            {"role": "user", "content": user_message}
+            {
+                'role': 'system',
+                'content': 'Тебе нужно оценить квартиру по 10 бальной шкале и объяснить почему. Ты всегда должен приветствовать пользователя в самом начале, как нейро-работник ЖКХ компании "Медвежьи услуги"'
+
+            },
+            {
+                'role': "user",
+                'content': user_message
+            }
         ],
         "temperature": 1,
         "top_p": 0.1,
