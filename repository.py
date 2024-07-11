@@ -1,15 +1,16 @@
 import math
 
+import numpy as np
+from matplotlib import pyplot as plt
 from sqlalchemy import select, func
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from datetime import datetime
 from HouseEntity import House
 from FlatRatioEntity import Flat as FlatEntity
 from database import new_session, TaskOrm
 from schemas import Flat, ValuePeriod
 from schemas import STaskAdd, STask, HouseResponse
-
 
 class HouseRepository:
     @classmethod
@@ -522,3 +523,40 @@ class HouseRepository:
                 total_people += rounded_avg_count
 
             return total_people
+
+    def plot_linear_regression_with_dates(x_dates, y, coefficient, file_path='linear_regression_plot.png'):
+        # Преобразование данных в нужный формат
+        y = np.array(y)
+        x_dates = np.array([datetime.strptime(str(date), "%Y-%m-%d") for date in x_dates])
+
+        # Линия тренда
+        y_trend = coefficient * y
+
+        # Построение графика
+        plt.figure(figsize=(12, 8))  # Размер графика 12x8 дюймов
+        plt.scatter(x_dates, y, color='blue', label='Данные')
+        plt.plot(x_dates, y, color='blue', linestyle='-', linewidth=1, alpha=0.5,
+                 label='Соединенные точки')  # Соединяем точки
+        plt.plot(x_dates, y_trend, color='red', linestyle='--', linewidth=2,
+                 label=f'Линия тренда (коэффициент {coefficient})')
+        plt.xlabel('Дата')
+        plt.ylabel('Значение')
+        plt.title('График линейной регрессии с заданным коэффициентом')
+        plt.legend()
+
+        # Добавление значений точек
+        for i, (date, value) in enumerate(zip(x_dates, y)):
+            plt.text(date, value, f'{value}', ha='center', va='bottom', fontsize=10)
+
+        # Настройка формата дат на оси X
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
+        plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.AutoDateLocator())
+        plt.gcf().autofmt_xdate(rotation=45)
+
+        # Масштабирование графика
+        plt.tight_layout()
+
+        # Сохранение графика в файл
+        plt.savefig(file_path)
+        plt.close()
+        print(f"Graph saved to {file_path}")
