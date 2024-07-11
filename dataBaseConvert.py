@@ -3,7 +3,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-from processing import csv_to_unix_time_df
+from processing import csv_to_unixtime_df
 import sqlite3
 
 treshold = .65
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         connection.commit()
 
         filename = "raai_school_2024.csv"
-        data = csv_to_unix_time_df(filename)
+        data = csv_to_unixtime_df(filename)
 
         statistics_by_house: pd.DataFrame = data.fillna(.0)
         statistics_by_house = statistics_by_house.drop(['payment_period'], axis=1)
