@@ -28,6 +28,11 @@ class HouseResponse(BaseModel):
     electrical_percent: Optional[float]
 
 
+class SearchResponse(BaseModel):
+    houses: list[HouseResponse]
+    count: int
+
+
 class ValuePeriod(BaseModel):
     value: int
     period: str

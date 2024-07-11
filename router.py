@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends,HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy import select, distinct
 
@@ -9,28 +9,14 @@ from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
-from schemas import STaskAdd, STask, STaskId, HouseResponse
+from schemas import STaskAdd, STask, STaskId, HouseResponse, SearchResponse
+
+from typing import Optional
+
 router = APIRouter(
     prefix="/data",
-    tags=["Таски"],
+    tags=["data"],
 )
-
-
-@router.post("")
-async def add_task(
-        task: Annotated[STaskAdd, Depends()],
-) -> STaskId:
-    task_id = await HouseRepository.add_one(task)
-    return {"ok": True, "task_id": task_id}
-
-
-@router.get("")
-async def get_tasks() -> list[STask]:
-    tasks = await HouseRepository.find_all()
-    return tasks
-
-
-
 
 
 @router.get("/houses/{house_tkn}", response_model=HouseResponse)
@@ -56,16 +42,15 @@ async def get_house(house_tkn: int) -> HouseResponse:
     return house_response
 
 
-from typing import Optional
-
-
-@router.get("/houses", response_model=list[HouseResponse])
-async def get_houses(q: Optional[str] = None, page: int = 1, pageSize: int = 10) -> list[HouseResponse]:
+@router.get("/houses", response_model=SearchResponse)
+async def get_houses(q: Optional[str] = None,
+                     page: int = 1,
+                     page_size: int = 10) -> SearchResponse:
     # Рассчитываем смещение для пагинации
-    offset = (page - 1) * pageSize
+    offset = (page - 1) * page_size
 
     # Получаем все дома с учетом пагинации
-    houses = await HouseRepository.find_all(q=q, offset=offset, limit=pageSize)
+    houses, count = await HouseRepository.find_all(q=q, offset=offset, limit=page_size)
 
     house_responses = []
     for house in houses:
@@ -84,13 +69,13 @@ async def get_houses(q: Optional[str] = None, page: int = 1, pageSize: int = 10)
             debt_percent=debt_percent,
             water_percent=water_percent,
             electrical_percent=electrical_percent,
-            rate_cold_water = tariffs.get('cold_water_tariff'),
-            rate_hot_water = tariffs.get('hot_water_tariff'),
-            rate_electrical = tariffs.get('electricity_tariff')
+            rate_cold_water=tariffs.get('cold_water_tariff'),
+            rate_hot_water=tariffs.get('hot_water_tariff'),
+            rate_electrical=tariffs.get('electricity_tariff')
         )
         house_responses.append(house_response)
 
-    return house_responses
+    return SearchResponse(houses=house_responses, count=count)
 
 
 @router.get("/housesIds", response_model=list[int])
