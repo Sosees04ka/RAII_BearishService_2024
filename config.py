@@ -1,3 +1,3 @@
-client_id = ('')
-secret = ('')
-auth = ('')
+client_id = ('6637e006-e8cc-44a2-88c8-43da68732cbd')
+secret = ('1e302e7a-95c2-4f07-8285-b5621782620e')
+auth = ('NjYzN2UwMDYtZThjYy00NGEyLTg4YzgtNDNkYTY4NzMyY2JkOjFlMzAyZTdhLTk1YzItNGYwNy04Mjg1LWI1NjIxNzgyNjIwZQ==')

@@ -5,7 +5,9 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from HouseEntity import House
+from FlatRatioEntity import Flat as FlatEntity
 from database import new_session, TaskOrm
+from schemas import Flat, ValuePeriod
 from schemas import STaskAdd, STask, HouseResponse
 
 
@@ -20,6 +22,54 @@ class HouseRepository:
             await session.flush()
             await session.commit()
             return task.id
+
+    @classmethod
+    async def get_info_flat(cls, flat_id: int) -> Flat:
+        async with new_session() as session:
+            query = select(House.house_tkn).where(House.flat_tkn == flat_id)
+            house_id = (await session.execute(query)).scalar()
+            house_id = int(house_id) if house_id else None
+
+            query = select(House.unix_payment_period, House.count_people,
+                           House.volume_hot, House.volume_cold, House.volume_electr,
+                           House.debt) \
+                .where(House.flat_tkn == flat_id)
+            results = await session.execute(query)
+            data = results.all()
+
+            flat_persons = [ValuePeriod(period=row.unix_payment_period, value=row.count_people) for row in data]
+            flat_hot = [ValuePeriod(period=row.unix_payment_period, value=row.volume_hot) for row in data]
+            flat_cold = [ValuePeriod(period=row.unix_payment_period, value=row.volume_cold) for row in data]
+            flat_electr = [ValuePeriod(period=row.unix_payment_period, value=row.volume_electr) for row in data]
+
+            last_debt = data[-1].debt
+
+            query_flat = select(FlatEntity).where(FlatEntity.flatId == flat_id)
+            res = await session.execute(query_flat)
+            data_flat, *_ = res.all()
+
+            dynamic_index = data_flat[0].debtAverage
+            stability = data_flat[0].stability
+            class_debt = data_flat[0].class_debt
+            water_percent = await cls.get_water_percent_flat(flat_id)
+            electrical_percent = await cls.get_energy_percent_flat(flat_id)
+
+            result = Flat(
+                house_tkn=house_id,
+                flat_tkn=flat_id,
+                flat_persons=flat_persons,
+                cold_water=flat_cold,
+                hot_water=flat_hot,
+                electrical=flat_electr,
+                current_debt=last_debt,
+                dynamic_index=dynamic_index,
+                stability=stability,
+                water_percent=water_percent,
+                electrical_percent=electrical_percent,
+                debt_cluster=class_debt
+            )
+
+            return result
 
     @classmethod
     async def find_all(cls, q: str = None, offset: int = 0, limit: int = 10) -> [list[House], int]:
@@ -116,6 +166,9 @@ class HouseRepository:
             result_previous_debt = await session.execute(stmt_previous_debt)
             previous_debt = result_previous_debt.scalar() or 0
 
+            if previous_debt == current_debt:
+                return 0
+
             if previous_debt == 0:
                 return None
 
@@ -169,6 +222,12 @@ class HouseRepository:
             if previous_volume_electr is None:
                 return None
 
+            if current_volume_electr == previous_volume_electr:
+                return 0
+
+            if previous_volume_electr == 0:
+                return None
+
             percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * 100
 
             return percent_change
@@ -213,10 +272,10 @@ class HouseRepository:
             current_volume_water_hot = result_current_volume_water_hot.scalar()
             current_volume_water_cold = result_current_volume_water_cold.scalar()
 
-            if current_volume_water_hot is None or current_volume_water_cold is None:
+            if current_volume_water_hot is None and current_volume_water_cold is None:
                 return None
 
-            current_volume_water = current_volume_water_hot + current_volume_water_cold
+            current_volume_water = (current_volume_water_hot or 0) + (current_volume_water_cold or 0)
 
             stmt_previous_volume_water_hot = select(func.sum(House.volume_hot)).where(
                 House.house_tkn == house,
@@ -234,10 +293,13 @@ class HouseRepository:
             previous_volume_water_hot = result_previous_volume_water_hot.scalar()
             previous_volume_water_cold = result_previous_volume_water_cold.scalar()
 
-            if previous_volume_water_hot is None or previous_volume_water_cold is None:
+            if previous_volume_water_hot is None and previous_volume_water_cold is None:
                 return None
 
-            previous_volume_water = previous_volume_water_hot + previous_volume_water_cold
+            previous_volume_water = (previous_volume_water_hot or 0) + (previous_volume_water_cold or 0)
+
+            if previous_volume_water == current_volume_water:
+                return 0
 
             if previous_volume_water == 0:
                 return None
@@ -249,6 +311,7 @@ class HouseRepository:
     @classmethod
     async def get_water_percent_flat(cls, flat):
         async with new_session() as session:
+            # Получаем последние два периода оплаты
             stmt_payment_periods = (
                 select(House.unix_payment_period)
                     .where(House.flat_tkn == flat)
@@ -264,6 +327,7 @@ class HouseRepository:
 
             latest_unix_time, previous_unix_time = payment_periods
 
+            # Получаем объемы холодной и горячей воды за последние два периода оплаты
             stmt_volumes = (
                 select(
                     House.unix_payment_period,
@@ -280,15 +344,34 @@ class HouseRepository:
             result_volumes = await session.execute(stmt_volumes)
             volumes = {row.unix_payment_period: (row.sum_hot, row.sum_cold) for row in result_volumes}
 
+            # Проверяем наличие данных за оба периода
             if latest_unix_time not in volumes or previous_unix_time not in volumes:
                 return None
 
-            current_volume_water = sum(volumes[latest_unix_time])
-            previous_volume_water = sum(volumes[previous_unix_time])
+            # Получаем текущие и предыдущие объемы воды
+            latest_sum_hot, latest_sum_cold = volumes[latest_unix_time]
+            previous_sum_hot, previous_sum_cold = volumes[previous_unix_time]
 
+            # Если оба значения (горячая и холодная вода) для любого из периодов отсутствуют, возвращаем None
+            if (latest_sum_hot is None and latest_sum_cold is None) or (
+                    previous_sum_hot is None and previous_sum_cold is None):
+                return None
+
+            # Заменяем None на 0 и суммируем
+            current_volume_water = (latest_sum_hot or 0) + (latest_sum_cold or 0)
+            previous_volume_water = (previous_sum_hot or 0) + (previous_sum_cold or 0)
+
+            # Если после всех проверок один из объемов равен нулю, возвращаем None
             if current_volume_water is None or previous_volume_water is None:
                 return None
 
+            if current_volume_water == previous_volume_water:
+                return 0
+
+            if previous_volume_water==0:
+                return None
+
+            # Вычисляем процентное изменение
             percent_change = ((current_volume_water - previous_volume_water) / abs(previous_volume_water)) * 100
 
             return percent_change
@@ -339,6 +422,12 @@ class HouseRepository:
             if previous_volume_electr is None:
                 return None
 
+            if current_volume_electr == previous_volume_electr:
+                return 0
+
+            if previous_volume_electr==0:
+                return None
+
             percent_change = ((current_volume_electr - previous_volume_electr) / abs(previous_volume_electr)) * 100
 
             return percent_change
@@ -386,6 +475,9 @@ class HouseRepository:
             if previous_debt == current_debt:
                 return 0
 
+            if previous_debt == 0:
+                return None
+
             percent_change = ((current_debt - previous_debt) / abs(previous_debt)) * -100
 
             return percent_change
@@ -413,13 +505,13 @@ class HouseRepository:
         return house
 
     @classmethod
-    async def count_people_in_house(cls,house_tkn: int):
+    async def count_people_in_house(cls, house_tkn: int):
         async with new_session() as session:
             # Вычисляем среднее количество пользователей в каждой квартире
             stmt = (
                 select(House.flat_tkn, func.avg(House.count_people))
-                .where(House.house_tkn == house_tkn)
-                .group_by(House.flat_tkn)
+                    .where(House.house_tkn == house_tkn)
+                    .group_by(House.flat_tkn)
             )
 
             avg_people_per_flat = await session.execute(stmt)

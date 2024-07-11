@@ -11,3 +11,6 @@ class Flat(Base):
     ratio = Column(Float, nullable=False)
     debtAverage = Column(Float, nullable=False)
     stability = Column(BOOLEAN)
+    class_debt = Column(Integer)
+
+
