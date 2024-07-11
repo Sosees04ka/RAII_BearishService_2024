@@ -2,5 +2,6 @@ venv
 tasks.db
 .idea
 __pycache__
+config.py
 data.db
 raai_school_2024.csv
