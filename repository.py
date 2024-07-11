@@ -22,20 +22,23 @@ class HouseRepository:
             return task.id
 
     @classmethod
-    async def find_all(cls, q: str = None, offset: int = 0, limit: int = 10) -> list[House]:
+    async def find_all(cls, q: str = None, offset: int = 0, limit: int = 10) -> [list[House], int]:
         async with new_session() as session:
             query = select(House).group_by(House.house_tkn)
+            query_count = select(House.house_tkn).group_by(House.house_tkn)
 
             # Применяем условный поиск, если задан параметр q
             if q:
                 query = query.where(House.house_tkn.contains(q))
+                query_count = query_count.where(House.house_tkn)
 
+            count = await session.execute(query_count)
             # Добавляем смещение и лимит
             query = query.offset(offset).limit(limit)
 
             result = await session.execute(query)
             houses = result.scalars().all()
-            return houses
+            return houses, 0
 
     @classmethod
     async def get_flat_ids_grouped(cls) -> list:
