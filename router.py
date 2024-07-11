@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends,HTTPException
 from sqlalchemy import select, distinct
 
 from HouseEntity import House
+from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
 from database import new_session
 from repository import HouseRepository
@@ -101,3 +102,10 @@ async def get_housesIds() -> list[int]:
         house_ids = [row[0] for row in result]
 
     return house_ids
+
+@router.get("/chat")
+async def add_question(question: str):
+    # Получение ответа от нейронной сети
+    neural_response = get_chat_completion(giga_token, question)
+
+    return {"answer": neural_response}
