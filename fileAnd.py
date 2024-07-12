@@ -55,14 +55,11 @@ def linregress_new(x, y):
     y = np.array(y, dtype=np.float64)
 
     sum_abs_x = sum(abs(i) for i in x)
-    correction = 1
-
-    if sum_abs_x != 0.0:
-        correction = -sum(x) / sum_abs_x
 
     model = Ridge()
     model.fit(x, y)
-    return np.median(x),model.coef_, all(mark <= 0.0 for mark in x)
+    return np.median(x), model.coef_, all(mark <= 0.0 for mark in x)
+
 
 async def dataAllocation():
     filename = "raai_school_2024.csv"
@@ -76,38 +73,10 @@ async def dataAllocation():
         y = np.linspace(1, len(x), len(x))
         d, k, stability = linregress_new(x, y)
 
-        flatItems.append(Flat(flatId=key, ratio=k, stability=stability,debtAverage = d))
+        flatItems.append(Flat(flatId=key, ratio=k, stability=stability, debtAverage=d))
         print(f"Record #{key} {k=} {stability=}")
 
     await HouseRepository.add_flats(flatItems)
-
-    # flats_id = await TaskRepository.getFlatIDsGrouped()
-    #
-    # # print(np.linspace(1, len(x), len(x)))
-    # # запрашиваю данные о кв и долгах
-    # # беру данные долга запихиваю в x
-    # # формирую y при помощи linspace
-    # # получаю k
-    # # добавляю ид кв + k в массив
-    # # массив по окончанию выгружается в бд
-    # # хайп
-    #
-    # flatItems = []
-    #
-    # count = 0
-    # for flat_id in flats_id:
-    #     start = time.time()
-    #     x = await TaskRepository.getFlatDebtsById(flat_id)
-    #     y = np.linspace(1, len(x), len(x))
-    #     k, stability = linregress(x, y)
-    #
-    #     end = time.time()
-    #     print(end - start)
-    #     flatItems.append(Flat(flatId=flat_id, ratio=k, stability=stability))
-    #     print(f"Record #{flat_id}")
-    #
-    #     if count % 1000 == 0 and count != 0:
-    #         await TaskRepository.addFlats(flatItems)
 
 
 # Принесли Чебурашка и Гена домой ящик пива.
