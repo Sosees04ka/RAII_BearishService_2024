@@ -1,6 +1,7 @@
 import asyncio
 import math
 
+import nest_asyncio
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
 import os
@@ -137,8 +138,6 @@ async def dataLoader(flatId):
 
 
 async def formPdf(flatId):
-    await dataLoader(flatId)
-
     # Формирование пдфа
     filePath = os.path.abspath("output.html")
     fileUrl = pathlib.Path(filePath).as_uri()
