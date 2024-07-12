@@ -133,9 +133,12 @@ class HouseRepository:
     @classmethod
     async def get_house_anomaly(cls, flat_tkn_value):
         async with new_session() as session:
-            query = select(House.anomaly) \
+            stmt = (
+                select(func.avg(House.anomaly))
                 .where(House.flat_tkn == flat_tkn_value)
-            results = await session.execute(query)
+                .group_by(House.flat_tkn)
+            )
+            results = await session.execute(stmt)
             return results.first()
     @classmethod
     async def add_flats(cls, flats):

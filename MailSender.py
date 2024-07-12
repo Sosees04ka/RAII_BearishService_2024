@@ -30,4 +30,4 @@ async def send_mail(subject, to, msg, flatId):
 
 
 if __name__ == '__main__':
-    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>', 2))
+    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>', 23170))
