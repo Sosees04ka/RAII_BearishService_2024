@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from sqlalchemy import select, distinct
 
+import MailSender
 from HouseEntity import House
 from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
@@ -129,7 +130,7 @@ async def add_question(flat_id: int):
     if flat_info.flat_persons[0].value == 0:
         flat_persons_value = "данные не указаны"
     else:
-        flat_persons_value = flat_info.flat_persons
+        flat_persons_value = flat_info.flat_persons[0].value
 
 
     question = f"Затраты ХВС - {cold_water_value}, Затраты ГВС - {hot_water_value}, Затраты Электричества - {electrical_value}, Количество людей - {flat_persons_value}"
@@ -139,3 +140,7 @@ async def add_question(flat_id: int):
     neural_response = get_chat_completion(giga_token, question)
 
     return {"answer": neural_response}
+
+@router.get("/send/{flat_id}/{email}")
+async def send_email(flat_id:int,email: Optional[str] = None):
+    await MailSender.send_mail('Ваш отчет', email, '<h1>Добрый день, ваш отчет готов</h1>', flat_id)
