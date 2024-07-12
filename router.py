@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from sqlalchemy import select, distinct
 
+import MailSender
 from HouseEntity import House
 from gigachat import get_chat_completion, giga_token
 from matrix import Matrix
@@ -137,3 +138,7 @@ async def add_question(flat_id: int):
     neural_response = get_chat_completion(giga_token, question)
 
     return {"answer": neural_response}
+
+@router.get("/send/{flat_id}/{email}")
+async def send_email(flat_id:int,email: Optional[str] = None):
+    await MailSender.send_mail('Ваш отчет', email, '<h1>Добрый день, ваш отчет готов</h1>', flat_id)

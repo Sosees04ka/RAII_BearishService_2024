@@ -1,4 +1,4 @@
-from sqlalchemy import Float
+from sqlalchemy import Float, BOOLEAN
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer
 
@@ -18,4 +18,5 @@ class House(Base):
     volume_cold = Column(Float)
     volume_hot = Column(Float)
     volume_electr = Column(Float)
+    anomaly = Column(BOOLEAN)
     count_people = Column(Integer)

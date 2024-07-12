@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        .container {
+            border: 2px solid black;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .header, .footer {
+            display: flex;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+        .section {
+            border: 2px solid black;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .section.table-section {
+            height: auto;
+            width: 79%
+        }
+        .section img {
+            max-width: 100%;
+            height: auto;
+        }
+        .chart {
+            border: 2px solid black;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .footer .left, .footer .right {
+            display: inline-block;
+            width: 49%;
+        }
+        .stonks {
+            border: 2px solid black;
+            padding: 10px;
+            text-align: center;
+            font-size: 24px;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 5px;
+            text-align: left;
+        }
+        .image-section{
+            display: flex;
+            justify-content: space-between;
+        }
+        .image-section-left{
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: space-between;
+        }
+        .logo{
+        width: 150px;
+        }
+        .title{
+        display: flex;
+        width: 100%;
+        justify-content: space-around;
+        align-content: flex-start;
+        align-items: center;
+        font-size: {{fontTitle}}px;
+        }
+        .text-area{
+        font-size: 30px;
+        }
+        .img-section{
+        width: 20%;
+        }
+        .percentBlock{
+        display: flex;
+        flex-direction: column;
+        width: 33%;
+        border: 2px solid black;
+        align-items: center;
+        gap:25%;
+        }
+        .percent-blocks{
+        width: 79%;
+        display: flex;
+        gap: 1%;
+        }
+        .blockTitle{
+            font-size: 75%;
+            margin-top: 10%;
+        }
+        .blockInfo{
+            font-size: 170%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">
+            <img class="logo" src="{{logo}}" alt="Думайте...">
+        </div>
+        <div class="title">
+            {{logoText}}
+        </div>
+
+    </div>
+    <div>Дом {{houseId}}, квартира {{flatId}}</div>
+    <div class="section">
+        <table>
+            <tr>
+                <th>Период</th>
+                <th>Платеж</th>
+                <th>Долг</th>
+                <th>Оплачено</th>
+                <th>Объем ХВС</th>
+                <th>Объем ГВС</th>
+                <th>Объем Элект.</th>
+            </tr>
+            {% for d in data %}
+            <tr>
+                <td>{{d.payment_period}}</td>
+                <td>{{d.income}}</td>
+                <td>{{d.debt}}</td>
+                <td>{{d.raised}}</td>
+                <td>{{d.volume_cold}}</td>
+                <td>{{d.volume_hot}}</td>
+                <td>{{d.volume_electr}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div>
+        <div class="image-section-left">
+            <div class="section percent-blocks">
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        Среднее кол-во проживающих:
+                    </div>
+                    <div class="blockInfo">
+                        {{amount}}
+                    </div>
+                </div>
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        Стабильность оплаты:
+                    </div>
+                    <div class="blockInfo" style="display: flex; gap: 3px;">
+                        {{stability}}
+                    </div>
+                </div>
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        Динамика оплаты:
+                    </div>
+                    <div class="blockInfo">
+                        {{ratio}}
+                    </div>
+                </div>
+            </div>
+            <div class="section img-section">
+                <img src="{{family}}" alt="Думайте...">
+            </div>
+        </div>
+        <div class="image-section">
+            <div class="section percent-blocks">
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        <div>Потребление электричества</div>
+                        <div>за последний месяц, %:</div>
+                    </div>
+                    <div class="blockInfo">
+                        {{debtPercentElectr}}
+                    </div>
+                </div>
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        <div>Потребление воды</div>
+                        <div>за последний месяц, %:</div>
+                    </div>
+                    <div class="blockInfo">
+                        {{debtPercentWater}}
+                    </div>
+                </div>
+                <div class="percentBlock">
+                    <div class="blockTitle">
+                        <div>Изменение долга</div>
+                        <div>за последний месяц, %:</div>
+                    </div>
+                    <div class="blockInfo">
+                        {{debtPercentDebt}}
+                    </div>
+                </div>
+            </div>
+            <div class="section img-section">
+                <img src="{{situation}}" alt="Думайте...">
+            </div>
+        </div>
+    </div>
+    <div class="image-section-left">
+        <div class="section" style="width: 79%;">
+                <pre style="font-family: Arial, sans-serif; white-space: break-spaces;">
+                {{stonksTitle}}
+                {{stonksText}}
+                </pre>
+        </div>
+        <div class="section img-section">
+            <img src="{{stonks}}" alt="Думайте...">
+        </div>
+    </div>
+    <div class="chart">
+        <img src="{{graph}}" alt="Думайте..." style="width:100%;">
+    </div>
+</div>
+</body>
+</html>
