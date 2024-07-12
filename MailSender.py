@@ -4,12 +4,15 @@ from email.mime.text import MIMEText
 from aiosmtplib import SMTP
 import asyncio
 
+from pdf import formPdf, dataLoader
+
 EMAIL = 'orderbuyerzxc@gmail.com'
 PWD = 'bhau wuvy rltg psgv'
-path_to_pdf = r'D:\Games\PyCharmRepos\RAII_BearishService_2024\report.pdf'
+path_to_pdf = r'output.pdf'
 
 
-async def send_mail(subject, to, msg):
+async def send_mail(subject, to, msg, flatId):
+    await formPdf(flatId)
     message = MIMEMultipart()
     message["From"] = EMAIL
     message["To"] = to
@@ -27,4 +30,4 @@ async def send_mail(subject, to, msg):
 
 
 if __name__ == '__main__':
-    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>', ))
+    asyncio.run(send_mail('Ваш отчет', 'alazar2103@gmail.com', '<h1>Добрый день, ваш отчет готов</h1>', 2))

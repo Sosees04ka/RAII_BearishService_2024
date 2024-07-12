@@ -12,6 +12,7 @@ from schemas import Flat, ValuePeriod
 from schemas import STaskAdd
 
 
+
 class HouseRepository:
     @classmethod
     async def add_one(cls, data: STaskAdd) -> int:
@@ -110,6 +111,32 @@ class HouseRepository:
             result = await session.execute(query)
             return result.scalars().all()
 
+    @classmethod
+    async def get_flat_by_id(cls, flat_tkn_value) -> FlatEntity:
+        async with new_session() as session:
+            query = select(FlatEntity).where(FlatEntity.flatId == flat_tkn_value)
+            result = await session.execute(query)
+            return result.scalars().first()
+
+    @classmethod
+    async def get_flat_avg_people_by_id(cls, flat_tkn_value):
+        async with new_session() as session:
+            stmt = (
+                select(func.avg(House.count_people))
+                .where(House.flat_tkn == flat_tkn_value)
+                .group_by(House.flat_tkn)
+            )
+
+            avg_people_per_flat = await session.execute(stmt)
+            return avg_people_per_flat.first()
+
+    @classmethod
+    async def get_house_anomaly(cls, flat_tkn_value):
+        async with new_session() as session:
+            query = select(House.anomaly) \
+                .where(House.flat_tkn == flat_tkn_value)
+            results = await session.execute(query)
+            return results.first()
     @classmethod
     async def add_flats(cls, flats):
         async with new_session() as session:
@@ -520,24 +547,28 @@ class HouseRepository:
 
             return total_people
 
-    def plot_linear_regression_with_dates(x_dates, y, coefficient, file_path='linear_regression_plot.png'):
+    def plot_linear_regression_with_dates(x_dates, y, coefficient, file_path='assets/linear_regression_plot.png'):
         # Преобразование данных в нужный формат
         y = np.array(y)
         x_dates = np.array([datetime.strptime(str(date), "%Y-%m-%d") for date in x_dates])
 
+        coefficients = np.polyfit(y, np.linspace(1, len(y), len(y)), 1)
         # Линия тренда
         y_trend = coefficient * y
 
+        polynomial = np.poly1d(coefficients)
+        # Рассчитать значения y для линии тренда
+        trendline = polynomial(y)
         # Построение графика
         plt.figure(figsize=(12, 8))  # Размер графика 12x8 дюймов
         plt.scatter(x_dates, y, color='blue', label='Данные')
         plt.plot(x_dates, y, color='blue', linestyle='-', linewidth=1, alpha=0.5,
                  label='Соединенные точки')  # Соединяем точки
-        plt.plot(x_dates, y_trend, color='red', linestyle='--', linewidth=2,
-                 label=f'Линия тренда (коэффициент {coefficient})')
+        # plt.plot(x_dates, trendline, color='red', linestyle='--', linewidth=2,
+        #          label=f'Линия тренда (коэффициент {coefficient})')
         plt.xlabel('Дата')
         plt.ylabel('Значение')
-        plt.title('График линейной регрессии с заданным коэффициентом')
+        plt.title('График долгов / переплат за период')
         plt.legend()
 
         # Добавление значений точек
