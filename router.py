@@ -127,7 +127,7 @@ async def add_question(flat_id: int):
     if flat_info.flat_persons[0].value == 0:
         flat_persons_value = "данные не указаны"
     else:
-        flat_persons_value = flat_info.flat_persons
+        flat_persons_value = flat_info.flat_persons[0].value
 
 
     question = f"Затраты ХВС - {cold_water_value}, Затраты ГВС - {hot_water_value}, Затраты Электричества - {electrical_value}, Количество людей - {flat_persons_value}"
