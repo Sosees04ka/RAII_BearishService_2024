@@ -7,6 +7,8 @@ dataframe = dataframe.fillna(0.0)
 
 dataframe = dataframe[['flat_tkn', 'final_class']]
 
+dataframe = dataframe[dataframe['final_class'] < 10]
+
 dataframe = dataframe.groupby(['flat_tkn'], as_index=False).agg([lambda x: np.ceil(np.mean(x))])
 
 dataframe.columns = [head for head, *_ in dataframe.columns]

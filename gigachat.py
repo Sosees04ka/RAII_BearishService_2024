@@ -14,6 +14,7 @@ encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-
 if encoded_credentials != auth:
     raise Exception("Credentials do not match")
 
+
 def get_token(auth_token, scope='GIGACHAT_API_PERS'):
     rq_uid = str(uuid.uuid4())
     url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
@@ -32,7 +33,9 @@ def get_token(auth_token, scope='GIGACHAT_API_PERS'):
         print(f"Ошибка: {str(e)}")
         return None
 
+
 giga_token = get_token(auth)
+
 
 def get_chat_completion(auth_token, user_message):
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"

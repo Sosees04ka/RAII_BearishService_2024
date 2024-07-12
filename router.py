@@ -75,6 +75,8 @@ async def get_houses(q: Optional[str] = None,
         )
         house_responses.append(house_response)
 
+    print(house_responses[0])
+
     return SearchResponse(houses=house_responses, count=count)
 
 
